@@ -89,12 +89,27 @@ let showHandledReplies=false,replyFilter='all';
 function reviewNeedsApproval(r){return !Number.isFinite(r.score)||!Number.isFinite(r.scale)||r.scale<=0||r.score/r.scale<0.8;}
 function suggestedReply(r){
  const evidence=reviewAspectEvidence.find(a=>a.reviewId===r.id)?.aspects||[];
- const praise=[...new Set(evidence.filter(a=>a.sentiment==='good').map(a=>a.detail.toLowerCase().replace(/[.;]+$/, '')))];
- const issues=[...new Set(evidence.filter(a=>a.sentiment==='bad').map(a=>a.detail.toLowerCase().replace(/[.;]+$/, '')))];
+ const clean=s=>String(s).trim().replace(/[.;]+$/, '');
+ const praise=[...new Set(evidence.filter(a=>a.sentiment==='good').map(a=>clean(a.detail)))];
+ const issues=[...new Set(evidence.filter(a=>a.sentiment==='bad').map(a=>clean(a.detail)))];
+ const hash=Array.from(String(r.id||r.author||'')).reduce((n,c)=>(Math.imul(n,31)+c.charCodeAt(0))>>>0,7);
+ const pick=(options,salt)=>options[((hash>>>salt)+salt)%options.length];
  const name=r.author||'gæst';
- if(issues.length||reviewNeedsApproval(r))return `Hej ${name}. Tak fordi du har delt din oplevelse med os.${praise.length?' Vi er glade for, at du også fremhæver positive ting ved opholdet.':''} Det gør os kede af at høre, at oplevelsen ikke levede op til dine forventninger.${issues.length?' Du nævner blandt andet: '+issues.join('; ')+'. Det vil vi gerne undersøge nærmere.':''} Du er meget velkommen til at kontakte os direkte, så vi kan følge op på din oplevelse. Venlig hilsen teamet`;
- return `Hej ${name}. Tusind tak for din fine anmeldelse!${praise.length?' Det er dejligt at læse din ros: '+praise.join('; ')+'.':''} Tak fordi du tog dig tid til at dele oplevelsen. Vi håber at byde dig velkommen igen. Venlig hilsen teamet`;
+ const place=properties.find(p=>p.id===r.property)?.name||'os';
+ const opening=pick([`Hej ${name}.`,`Kære ${name}.`,`Hej ${name},`],0);
+ const thanks=pick(['Tak, fordi du tog dig tid til at fortælle om din oplevelse.','Mange tak for din anmeldelse og din feedback.','Tak for at dele dine indtryk med os.','Tak, fordi du har skrevet om dit besøg.','Vi sætter pris på, at du fortæller os om din oplevelse.','Tak for din tilbagemelding.'],3);
+ const praiseText=praise.length?pick([`Vi blev især glade for din ros: ${praise.join('; ')}.`,`Det glæder os at læse det, du fremhæver: ${praise.join('; ')}.`,`Tak for de gode ord om oplevelsen hos ${place}: ${praise.join('; ')}.`,`De positive ting, du nævner, betyder meget for os: ${praise.join('; ')}.`],6):'';
+ const signoff=pick([`Venlig hilsen teamet på ${place}`,`De bedste hilsner fra ${place}`,`Mange hilsner fra os på ${place}`],11);
+ if(issues.length||reviewNeedsApproval(r)){
+  const acknowledgement=pick(['Vi er kede af, at der var dele af oplevelsen, som ikke levede op til dine forventninger.','Det er ærgerligt at læse, at besøget ikke blev helt, som du havde håbet.','Tak for at gøre os opmærksomme på det, der ikke fungerede for dig.','Vi beklager, at din oplevelse gav anledning til utilfredshed.'],8);
+  const issueText=issues.length?pick([`Du beskriver blandt andet: ${issues.join('; ')}.`,`Vi har læst dine bemærkninger om: ${issues.join('; ')}.`,`Det, du især peger på, er: ${issues.join('; ')}.`],13):'';
+  const followup=pick(['Du er velkommen til at kontakte os direkte, så vi kan høre mere om dit besøg.','Hvis du har lyst, må du gerne skrive til os direkte og uddybe din oplevelse.','Vi vil gerne høre nærmere fra dig; du er meget velkommen til at tage direkte kontakt.'],16);
+  return [opening,thanks,praiseText,acknowledgement,issueText,followup,signoff].filter(Boolean).join(' ');
+ }
+ const closing=pick(['Vi håber at se dig igen en anden gang.','Det ville være dejligt at byde dig velkommen igen.','Tak for besøget – du er altid velkommen tilbage.','Vi håber, at vejen fører dig forbi os igen.','Tak for de fine ord og for besøget hos os.'],19);
+ return [opening,thanks,praiseText,closing,signoff].filter(Boolean).join(' ');
 }
+
 function renderNightReport(){
  const h=document.querySelector('#nightReport');if(!h)return;const e=escapeHTML;
  const matches=r=>(selected==='all'||r.property===selected)&&(platform==='all'||r.platform===platform);
