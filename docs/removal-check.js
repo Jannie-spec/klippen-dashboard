@@ -2,7 +2,7 @@
 // Dårlig = 1–3 på 5-skala eller 6 og derunder på 10-skala.
 // Regler er hentet fra platformenes egne sider 25. oktober 2026 (se kilde under hver platform).
 // Claude vurderer hver ny dårlig anmeldelse i den daglige opdatering og tilføjer den i removalChecks.
-// verdict: possible | check | pending | rejected | removed | none. Rapportering sker kun efter Jannies ja.
+// verdict: possible | check | pending | rejected | removed | none. Jannie har givet stående ja til, at Claude selv rapporterer, når der er grundlag.
 
 const removalRules={
  'Google':{
@@ -161,13 +161,18 @@ function renderRemovalCheck(){
   const hints=removalHints(r);
   return `<article class="aspect-card removal-card"><span class="rv-badge ${v.cls}">${v.label}</span><h3>${e(r.author||'Gæst')} · ${e(placeName(r.property))}</h3><div class="meta">${e(r.platform)} · <strong>${e(String(r.score).replace('.',','))}/${e(r.scale)}</strong> · ${e(r.publishedDate||r.publishedMonth||r.publishedRelative||'Dato ukendt')}${r.url?` · <a href="${e(r.url)}" target="_blank" rel="noopener noreferrer">Åbn på ${e(r.platform)}</a>`:''}</div><p>${e(r.summary||'')}</p>${check?`<p><strong>Vurdering:</strong> ${e(check.reason)}</p>`:'<p><strong>Vurdering:</strong> Ny anmeldelse – Claude tjekker den mod platformens regler ved næste daglige opdatering.</p>'}${grounds.length?`<div class="rv-grounds">${grounds.map(g=>`<span title="${e(g[1])}">${e(g[0])}</span>`).join('')}</div>`:''}${hints.length?`<ul class="rv-hints">${hints.map(h=>`<li>${e(h)}</li>`).join('')}</ul>`:''}${check?.next?`<div class="suggestion"><strong>Næste skridt</strong><p>${e(check.next)}</p></div>`:''}${check?`<small class="rv-checked">Tjekket af Claude ${e(new Date(check.checkedAt).toLocaleDateString('da-DK',{day:'numeric',month:'long',year:'numeric'}))}.</small>`:''}</article>`;
  };
- host.innerHTML=`<div class="section-heading"><div><div class="eyebrow">DÅRLIGE ANMELDELSER · REGELTJEK</div><h2>Kan anmeldelsen fjernes?</h2></div><span class="tag">${count('possible')} mulige · ${count('check')+count('unassessed')} undersøges · ${count('pending')} rapporteret</span></div><p class="section-intro">Claude tjekker hver anmeldelse med 1–3 stjerner eller 6/10 og derunder mod platformens regler og giver Jannie besked. Claude står for rapporteringen til platformen, når Jannie har sagt ja. Kan en anmeldelse ikke fjernes, er det rigtige et roligt svar og at rette det, gæsten peger på.</p>${shown.length?`<div class="reply-grid">${shown.map(card).join('')}</div>`:'<p class="empty-text">Ingen dårlige anmeldelser at undersøge for dette valg.</p>'}${hidden.length?`<label class="workflow-check"><input id="showNoRemovalGround" type="checkbox" ${showNoRemovalGround?'checked':''}>Vis også dem uden grundlag, afviste og fjernede (${hidden.length})</label>`:''}`;
+ host.innerHTML=`<div class="section-heading"><div><div class="eyebrow">DÅRLIGE ANMELDELSER · REGELTJEK</div><h2>Kan anmeldelsen fjernes?</h2></div><span class="tag">${count('possible')} mulige · ${count('check')+count('unassessed')} undersøges · ${count('pending')} rapporteret</span></div><p class="section-intro">Claude tjekker hver anmeldelse med 1–3 stjerner eller 6/10 og derunder mod platformens regler og giver Jannie besked. Er der grundlag, rapporterer Claude den selv til platformen. Svar ikke på anmeldelser, der står som “Mulig”, “Tjek først” eller “Rapporteret”, før Claude giver besked. Kan en anmeldelse ikke fjernes, er det rigtige et roligt svar og at rette det, gæsten peger på.</p>${shown.length?`<div class="reply-grid">${shown.map(card).join('')}</div>`:'<p class="empty-text">Ingen dårlige anmeldelser at undersøge for dette valg.</p>'}${hidden.length?`<label class="workflow-check"><input id="showNoRemovalGround" type="checkbox" ${showNoRemovalGround?'checked':''}>Vis også dem uden grundlag, afviste og fjernede (${hidden.length})</label>`:''}`;
  host.querySelector('#showNoRemovalGround')?.addEventListener('change',ev=>{showNoRemovalGround=ev.target.checked;renderRemovalCheck();});
 }
 function removalRulesHTML(p){
  const r=removalRules[p];if(!r)return '<p>Ingen regler registreret for denne platform.</p>';const e=escapeHTML;
  return `<ul>${Object.values(r.grounds).map(([l,d])=>`<li><strong>${e(l)}</strong>${d?' – '+e(d):''}</li>`).join('')}</ul><p><strong>Ikke grundlag:</strong> ${e(r.notGrounds)}</p><p><strong>Sådan rapporterer I:</strong> ${e(r.how)}</p>${r.limits?`<p><strong>Frister:</strong> ${e(r.limits)}</p>`:''}<p><a href="${e(r.source)}" target="_blank" rel="noopener noreferrer">Kilde: ${e(p)}s regler</a></p>`;
 }
+// Vent med at svare, mens Claude forsøger at få anmeldelsen fjernet. Et svar, der fx takker for opholdet, kan svække en rapport om, at gæsten ikke var der.
+function removalHold(r){
+ const v=removalChecks[r.id]?.verdict;if(!['possible','check','pending'].includes(v))return '';
+ return `<div class="rv-hold"><strong>Vent med at svare</strong><p>Claude ${v==='pending'?'har rapporteret anmeldelsen til':'undersøger, om anmeldelsen kan fjernes af'} ${escapeHTML(r.platform)}. Svar først, når Claude giver besked.</p></div>`;
+}
 // Vis sammen med resten, når sted/platform skiftes eller teamets status opdateres.
 {const original=renderNightReport;renderNightReport=function(){original();renderRemovalCheck();};}
-renderRemovalCheck();
+renderNightReport();
