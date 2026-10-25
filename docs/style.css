@@ -50,3 +50,4 @@
 .rv-checked{display:block;margin-top:10px;color:var(--muted)}
 #removalCheck{border-top:3px solid var(--amber)}#removalCheck .rv-rules summary{border-top:0;padding:6px 0}
 .rv-hold{margin:10px 0;padding:10px 14px;background:#f6efd9;border-left:3px solid #c9a227;border-radius:3px}.rv-hold p{margin:4px 0;color:#6d5418;font-size:15px}.rv-hold strong{color:#5a4512}
+.rv-info{margin-top:14px}.rv-info textarea{min-height:60px}.rv-info-help{display:block;color:var(--muted);font-size:13px;margin-top:-4px}
