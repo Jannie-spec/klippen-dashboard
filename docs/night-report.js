@@ -171,7 +171,7 @@ async function initializeTeamBackend(){
  renderTeamLogin();if(!teamBackendConfig.url||!teamBackendConfig.publishableKey)return;
  try{
   if(!teamBackendConfig.publishableKey.startsWith('sb_publishable_'))throw Error('En hemmelig nøgle må ikke bruges i dashboardet.');
-  const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.117.3');
+  const {createClient}=await import('/vendor/supabase-js-2.117.3.mjs');
   teamClient=createClient(teamBackendConfig.url,teamBackendConfig.publishableKey);
   const {data,error}=await teamClient.auth.getSession();if(error)throw error;teamUser=data.session?.user||null;
   teamClient.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY')teamPasswordSetup=true;if(event==='SIGNED_OUT'){clearTeamSession();}else if(session){teamUser=session.user;setTimeout(()=>refreshTeamWorkflow(),0);}});
