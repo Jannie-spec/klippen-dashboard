@@ -60,7 +60,11 @@
   const list=reviewHistory.series.filter(s=>(sel==='all'||s.property===sel)&&(plat==='all'||s.platform===plat))
    .sort((a,b)=>propOrder.indexOf(a.property)-propOrder.indexOf(b.property)||order.indexOf(a.platform)-order.indexOf(b.platform));
   if(!list.length)return '';
-  const byYear=s=>{const y={};for(const [k,n,sum] of s.buckets){const yr=k[0]==='Y'?k.slice(1):k.slice(0,4);y[yr]=y[yr]||[0,0];y[yr][0]+=n;y[yr][1]+=sum;}return y;};
+  // Nye anmeldelser fra den daglige gennemgang (skrevet efter indsamlingsdagen) lægges oven i.
+  const fresh=((typeof nightReport!=='undefined'&&nightReport.reviews)||[]).filter(r=>/^\d{4}-\d{2}-\d{2}$/.test(r.publishedDate||'')&&r.publishedDate>reviewHistory.collectedAt&&Number.isFinite(Number(r.score)));
+  const byYear=s=>{const y={};for(const [k,n,sum] of s.buckets){const yr=k[0]==='Y'?k.slice(1):k.slice(0,4);y[yr]=y[yr]||[0,0];y[yr][0]+=n;y[yr][1]+=sum;}
+   for(const r of fresh)if(r.property===s.property&&r.platform===s.platform){const yr=r.publishedDate.slice(0,4);y[yr]=y[yr]||[0,0];y[yr][0]++;y[yr][1]+=Number(r.score)*(s.scale/(r.scale||s.scale));}
+   return y;};
   const years=[...new Set(list.flatMap(s=>Object.keys(byYear(s))))].sort();
   const shown=years.slice(-8),early=years.length>8?years.slice(0,-8):[];
   const cols=(early.length?['før']:[]).concat(shown);
