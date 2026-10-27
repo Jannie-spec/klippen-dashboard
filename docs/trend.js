@@ -53,6 +53,26 @@
   return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${s.pts.length} målinger">${lines}<circle cx="${x(last).toFixed(1)}" cy="${y(last).toFixed(1)}" r="3" fill="${last.ok?'var(--green)':'var(--sage)'}"/></svg>`;
  }
 
+ function renderYears(sel,plat,name,e){
+  if(typeof reviewHistory==='undefined')return '';
+  const order=typeof platforms!=='undefined'?platforms:[];
+  const propOrder=(typeof properties!=='undefined'?properties:[]).map(p=>p.id);
+  const list=reviewHistory.series.filter(s=>(sel==='all'||s.property===sel)&&(plat==='all'||s.platform===plat))
+   .sort((a,b)=>propOrder.indexOf(a.property)-propOrder.indexOf(b.property)||order.indexOf(a.platform)-order.indexOf(b.platform));
+  if(!list.length)return '';
+  const byYear=s=>{const y={};for(const [k,n,sum] of s.buckets){const yr=k[0]==='Y'?k.slice(1):k.slice(0,4);y[yr]=y[yr]||[0,0];y[yr][0]+=n;y[yr][1]+=sum;}return y;};
+  const years=[...new Set(list.flatMap(s=>Object.keys(byYear(s))))].sort();
+  const shown=years.slice(-8),early=years.length>8?years.slice(0,-8):[];
+  const cols=(early.length?['før']:[]).concat(shown);
+  const cell=(n,sum,scale)=>{if(!n)return '<td class="yr-empty">–</td>';const avg=sum/n,r=avg/scale;const cls=r>=0.86?'yr-good':r>=0.74?'yr-mid':'yr-low';return `<td class="yr ${cls}"><strong>${avg.toLocaleString('da-DK',{minimumFractionDigits:1,maximumFractionDigits:1})}</strong><small>${n} anm.</small></td>`;};
+  let total=0;
+  const rows=list.map(s=>{const y=byYear(s);total+=Object.values(y).reduce((a,[n])=>a+n,0);const cells=cols.map(c=>{if(c==='før'){let n=0,sum=0;for(const yr of early)if(y[yr]){n+=y[yr][0];sum+=y[yr][1];}return cell(n,sum,s.scale);}const v=y[c];return v?cell(v[0],v[1],s.scale):cell(0,0,s.scale);}).join('');
+   return `<tr><td><span class="property">${e(name(s.property))}</span><span class="address">${e(s.platform)} · / ${s.scale}</span></td>${cells}</tr>`;}).join('');
+  const usedPlatforms=[...new Set(list.map(s=>s.platform))];
+  const notes=usedPlatforms.map(p=>reviewHistory.notes[p]?`<strong>${e(p)}:</strong> ${e(reviewHistory.notes[p])}`:'').filter(Boolean).join(' ');
+  return `<h3 class="trend-sub">Gennemsnit af anmeldelserne år for år</h3><p class="section-intro">Hver anmeldelse er hentet fra platformen og lagt i det år, den blev skrevet (${total.toLocaleString('da-DK')} anmeldelser). Grøn er en god karakter, orange en svag. Tallet er gæsternes gennemsnit det år – ikke platformens samlede bedømmelse.</p><div class="table-wrap"><table class="year-table"><thead><tr><th>Sted og platform</th>${cols.map(c=>`<th>${c==='før'?'Før '+shown[0]:c}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div><p class="footnote">${notes} Hentet ${new Date(reviewHistory.collectedAt).toLocaleDateString('da-DK',{day:'numeric',month:'long',year:'numeric'})}.</p>`;
+ }
+
  function renderTrend(){
   const host=document.querySelector('#trendPanel');if(!host)return;
   const e=typeof escapeHTML==='function'?escapeHTML:String;
@@ -77,7 +97,7 @@
   const tag=list.length?`Siden ${fmtDate(firstAt)} · ${days} målinger`:'Afventer historik';
   const body=list.length?`<div class="table-wrap"><table class="trend-table"><thead><tr><th>Sted og platform</th><th>Forløb</th><th>Bedømmelse</th><th>Ændring</th><th>Nye anmeldelser</th></tr></thead><tbody>${rows}</tbody></table></div><p class="footnote">Bygget af de daglige kontrollerede målinger (seneste ${fmtDate(lastAt)}). Platformene afrunder bedømmelsen – Google til én decimal – så en lille forbedring ses først, når der er kommet en del nye anmeldelser.</p>`
    :`<p class="empty-text">Der er endnu ingen målinger for dette valg.</p>`;
-  host.innerHTML=`<div class="section-heading"><div><div class="eyebrow">OP ELLER NED?</div><h2>Udvikling over tid</h2></div><span class="tag">${e(tag)}</span></div>${body}<div class="history-footer"><span>Stigninger <strong>${list.length?ups:'—'}</strong></span><span>Fald <strong>${list.length?downs:'—'}</strong></span><span>Nye anmeldelser <strong>${list.length?added:'—'}</strong></span></div>`;
+  host.innerHTML=`<div class="section-heading"><div><div class="eyebrow">OP ELLER NED?</div><h2>Udvikling over tid</h2></div><span class="tag">${e(tag)}</span></div>${renderYears(sel,plat,name,e)}<h3 class="trend-sub">De seneste uger</h3>${body}<div class="history-footer"><span>Stigninger <strong>${list.length?ups:'—'}</strong></span><span>Fald <strong>${list.length?downs:'—'}</strong></span><span>Nye anmeldelser <strong>${list.length?added:'—'}</strong></span></div>`;
  }
  window.renderTrend=renderTrend;
  const originalRender=window.render;
