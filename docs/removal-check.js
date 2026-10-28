@@ -123,7 +123,6 @@ const removalChecks={
  'airbnb:hostel:1156202787136511899:da79a474d75283ba':{verdict:'none',grounds:[],checkedAt:'2026-10-27',reason:'Tjekket i hostellets Airbnb-værtskonto: bekræftet reservation til 3 gæster, 4.–5. juli 2026, ikke aflyst, og gæsten boede der. Ingen beskeder fra gæsten, og hostellet har hverken anmeldt eller rapporteret gæsten, så det er ikke hævn. Teksten er én kort, negativ mening uden groft sprog eller personangreb. Ingen regel passer.',next:'Ingen rapport. Maiken har allerede svaret; ingen yderligere handling.'},
  'airbnb:hostel:1156211949097051927:24df73d38a9356c9':{verdict:'none',grounds:[],checkedAt:'2026-10-25',reason:'At billederne ikke stemte med oplevelsen er gæstens vurdering af opslaget.',next:'Tjek at billederne på opslaget viser værelset, som det er nu.'},
  'expedia:jorgens:diana:2026-07-29':{verdict:'none',grounds:[],checkedAt:'2026-10-25',reason:'Kun karakter uden tekst. Kan ikke fjernes, så længe opholdet fandt sted.',next:'Ingen handling. Følg kommende anmeldelser.'},
- 'booking.com:therns:trine:2026-10-14':{verdict:'none',grounds:[],checkedAt:'2026-10-25',reason:'Kun karakter uden tekst. Kan ikke fjernes, så længe gæsten boede der.',next:'Ingen handling.'},
  'tripadvisor:1024635595':{verdict:'none',grounds:[],checkedAt:'2026-10-25',reason:'Ophold i august 2025, altså efter overtagelsen. Konkret kritik af rengøring, bad og pris.',next:'Svar på anmeldelsen, hvis den mangler svar.'}
 };
 // Ægte ophold med almindelig kritik – ingen regelbrud ud fra referatet.
