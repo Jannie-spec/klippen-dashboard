@@ -21,7 +21,7 @@ function renderTodayOverview(){
  const isLeader=teamRole==='manager';
  const updated=new Date(nightReport.observedAt).toLocaleString('da-DK',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Copenhagen'});
  const who=r=>`<strong>${e(r.author||'Gæst')}</strong> · ${e(staffPlace(r.property))} · ${e(r.platform)}${staffScore(r)?' · '+e(staffScore(r)):''}`;
- const nowItems=replyNow.map(r=>`<li>${who(r)}<div class="task-actions"><button type="button" data-copy-text="${e(suggestedReply(r))}">Kopiér svarforslag</button><a href="${e(r.url)}" target="_blank" rel="noopener noreferrer">Svar på ${e(r.platform)} ↗</a><a href="#${e(replyAnchor(r))}">Se kortet</a></div></li>`).join('');
+ const nowItems=replyNow.map(r=>`<li>${who(r)}<div class="task-actions"><button type="button" data-copy-text="${e(suggestedReply(r))}">Kopiér svarforslag</button><a href="${e(ownerReplyUrl(r))}" target="_blank" rel="noopener noreferrer">Svar på ${e(r.platform)} ↗</a><a href="#${e(replyAnchor(r))}">Se kortet</a></div></li>`).join('');
  const waitItems=waitLeader.map(r=>`<li>${who(r)} <a href="#${e(replyAnchor(r))}">${isLeader?'Godkend svaret':'Se kortet'}</a></li>`).join('');
  const holdItems=dontTouch.map(r=>`<li>${who(r)}<span class="task-why">Claude prøver at få den fjernet. Svar ikke, før Claude giver besked.</span></li>`).join('');
  let issues='';
@@ -59,8 +59,10 @@ function staffToast(html,undo){
  t.querySelector('button')?.addEventListener('click',async()=>{t.hidden=true;await undo();});
  clearTimeout(staffToastTimer);staffToastTimer=setTimeout(()=>{t.hidden=true;},undo?8000:3500);
 }
+let staffSaveQueue=Promise.resolve();
 {const originalPersist=persistWorkflow;
- persistWorkflow=async function(key,field,value){
+ persistWorkflow=function(key,field,value){const run=staffSaveQueue.then(()=>staffPersist(key,field,value));staffSaveQueue=run.catch(()=>{});return run;};
+ async function staffPersist(key,field,value){
   const before=workflowState(key)[field];
   const ok=await originalPersist(key,field,value);
   if(ok){
@@ -69,7 +71,7 @@ function staffToast(html,undo){
    else staffToast(`<strong>${escapeHTML(label)} gemt</strong> for hele teamet.`);
   }else staffToast(`<strong>Ikke gemt.</strong> ${escapeHTML(teamStatus||'')}`);
   return ok;
- };
+ }
 }
 
 // ---------- hjælpetekst under notefelter ----------

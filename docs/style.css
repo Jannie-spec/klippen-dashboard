@@ -88,3 +88,5 @@
 .staff-toast[hidden]{display:none}
 .staff-toast button{width:auto;padding:6px 12px;background:#fff;color:#302f2f;border:0;border-radius:6px;font-weight:600}
 @media (max-width:820px){.task-groups{grid-template-columns:1fr}}
+.auto-send{background:#eef4ea;border:1px solid #b9cdb0;border-radius:8px;padding:8px 12px;font-size:15px;margin:8px 0}
+.guest-view{font-size:14px;color:var(--muted);margin-left:12px}
