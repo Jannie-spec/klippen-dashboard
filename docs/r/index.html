@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Klippen Hotel</title>
+<style>
+@font-face{font-family:'Source Sans 3';font-weight:400;font-display:swap;src:url(/assets/sans-400.ttf) format("truetype")}
+@font-face{font-family:'Source Sans 3';font-weight:600;font-display:swap;src:url(/assets/sans-600.ttf) format("truetype")}
+@font-face{font-family:'Source Serif Pro';font-weight:400;font-display:swap;src:url(/assets/serif-400.ttf) format("truetype")}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#e5e9e1;color:#2f2e2e;font:400 17px/1.5 'Source Sans 3',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+main{width:min(440px,calc(100vw - 32px));background:#fff;border-radius:16px;padding:32px 24px 28px;text-align:center;border-top:3px solid #b4533a}
+img{width:120px;height:auto;display:block;margin:0 auto 18px}
+h1{font:400 28px/1.2 'Source Serif Pro',Georgia,serif;margin:0 0 6px}
+p{margin:0 0 20px;color:#62695f}
+.stars{display:grid;gap:10px}
+button{all:unset;cursor:pointer;display:flex;align-items:center;gap:14px;background:#f6f7f3;border:1px solid #e5e9e1;border-radius:10px;padding:12px 16px;font-size:17px;text-align:left}
+button:hover,button:focus-visible{border-color:#b4533a;outline:none}
+button span{color:#b4533a;letter-spacing:2px;font-size:20px;white-space:nowrap}
+.wait{display:none}
+body.going .stars,body.going .intro{display:none}
+body.going .wait{display:block}
+</style>
+</head>
+<body>
+<main>
+<img src="/assets/klippen-logo.png" alt="Klippen Hotel">
+<h1 id="title">Hvordan var dit ophold?</h1>
+<p class="intro" id="intro">Klik på antal stjerner</p>
+<div class="stars" id="stars"></div>
+<p class="wait" id="wait">Et øjeblik …</p>
+</main>
+<script>
+(function(){
+ var FN='https://gaalukxbmzvtjwsfyssw.supabase.co/functions/v1/klippen-rating';
+ var HOTELS={
+  gd:{name:'Grevens Dal',google:'https://g.page/r/CWs42HT4rVUWEAE/review',page:'feedback-grevens-dal'},
+  sjg:{name:'Skt. Jørgens Gaard',google:'https://g.page/r/CR6l7HAwPIdCEAE/review',page:'feedback-skt-joergens-gaard'},
+  th:{name:'Therns',google:'https://search.google.com/local/writereview?placeid=ChIJ1RpsXgYLVUYR7Jq5xz8xgZg',page:'feedback-therns'}
+ };
+ var T={
+  da:{t:'Hvordan var dit ophold?',i:'Klik på antal stjerner',w:'Et øjeblik …',l:['Dårligt','Mindre godt','Okay','Rigtig godt','Fantastisk']},
+  en:{t:'How was your stay?',i:'Click the number of stars',w:'One moment …',l:['Poor','Not so good','Okay','Very good','Excellent']},
+  de:{t:'Wie war Ihr Aufenthalt?',i:'Klicken Sie auf die Anzahl der Sterne',w:'Einen Moment …',l:['Schlecht','Weniger gut','In Ordnung','Sehr gut','Ausgezeichnet']},
+  sv:{t:'Hur var din vistelse?',i:'Klicka på antal stjärnor',w:'Ett ögonblick …',l:['Dåligt','Mindre bra','Okej','Mycket bra','Fantastiskt']}
+ };
+ var q=new URLSearchParams(location.search);
+ var h=q.get('h'),hotel=HOTELS[h];
+ if(!hotel){location.replace('https://www.hotelklippen.com/');return;}
+ var l=q.get('l');
+ if(!T[l]){var nav=(navigator.language||'da').slice(0,2).toLowerCase();l=T[nav]?nav:(nav==='nb'||nav==='no'?'da':'en');}
+ var c=q.get('c')||'mail',b=q.get('b')||'',n=q.get('n')||'';
+ // Sirvoy leaves %placeholder% as text if a value is missing.
+ if(b.indexOf('%')>-1)b='';if(n.indexOf('%')>-1)n='';
+ var tx=T[l];document.documentElement.lang=l;
+ document.getElementById('title').textContent=tx.t;
+ document.getElementById('intro').textContent=tx.i;
+ document.getElementById('wait').textContent=tx.w;
+ document.title='Klippen Hotel · '+hotel.name;
+
+ function target(s){
+  if(s===5)return hotel.google;
+  var u='https://www.hotelklippen.com/'+(l==='da'?'':l+'/')+hotel.page+'?s='+s;
+  if(b)u+='&b='+encodeURIComponent(b);
+  return u;
+ }
+ function go(s){
+  document.body.className='going';
+  var body=JSON.stringify({h:h,s:s,l:l,c:c,b:b,n:n});
+  var sent;
+  try{sent=fetch(FN,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'text/plain'},body:body});}catch(e){sent=Promise.resolve();}
+  var done=false;function leave(){if(done)return;done=true;location.replace(target(s));}
+  Promise.race([sent,new Promise(function(r){setTimeout(r,1500);})]).then(leave,leave);
+ }
+ var s=parseInt(q.get('s'),10);
+ if(s>=1&&s<=5){go(s);return;}
+ var box=document.getElementById('stars');
+ for(var k=5;k>=1;k--){(function(k){
+  var btn=document.createElement('button');btn.type='button';
+  var st=document.createElement('span');st.textContent='★★★★★'.slice(0,k)+'☆☆☆☆☆'.slice(0,5-k);
+  btn.appendChild(st);btn.appendChild(document.createTextNode(tx.l[k-1]));
+  btn.addEventListener('click',function(){go(k);});
+  box.appendChild(btn);
+ })(k);}
+})();
+</script>
+<noscript><p style="text-align:center"><a href="https://www.hotelklippen.com/">hotelklippen.com</a></p></noscript>
+</body>
+</html>
